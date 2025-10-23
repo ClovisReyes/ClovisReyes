@@ -32,6 +32,14 @@ echo -e "$info"
 
 ```
 
+</td>
+<td width="40%" height="100%">
+<img align="right" width="100%" height="100%" 
+src="https://media1.tenor.com/m/qeyN2cl_GBsAAAAC/lain.gif" alt="Embedded GIF">
+</td>
+  </tr>
+</table>
+
 <br>
 
 ### 🔨 Languages and Tools:
@@ -50,13 +58,5 @@ echo -e "$info"
 <a href="https://www.figma.com/" target="_blank"> <img src="https://raw.githubusercontent.com/rahul-jha98/github_readme_icons/main/language_and_tools/square/figma/figma.svg" alt="figma" height='42px'/> </a>
 
 <br>
-  
-</td>
-<td width="40%" height="100%">
-<img align="right" width="100%" height="100%" 
-src="https://media1.tenor.com/m/qeyN2cl_GBsAAAAC/lain.gif" alt="Embedded GIF">
-</td>
-  </tr>
-</table>
 
 ![activity graph](https://github-readme-activity-graph.vercel.app/graph?username=ClovisReyes&theme=github-compact&custom_title=Clovis-Reyes%20Activity%20Graph&hide_border=true)
