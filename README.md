@@ -79,4 +79,4 @@ src="https://media1.tenor.com/m/qeyN2cl_GBsAAAAC/lain.gif" alt="Embedded GIF">
 
 
 
-![activity graph](https://github-readme-activity-graph.vercel.app/graph?username=ClovisReyes&theme=github-compact&custom_title=CloviReyes%20Activity%20Graph&hide_border=true)
+![activity graph](https://github-readme-activity-graph.vercel.app/graph?username=ClovisReyes&theme=github-compact&custom_title=Clovis-Reyes%20Activity%20Graph&hide_border=true)
