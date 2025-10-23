@@ -1,5 +1,5 @@
-<h1 align="left" id="macropower-title"> Konichiwa Watashi Ahmad</h1>
-<p align="center">
+<p align="center"><a href="https://github.com/ClovisReyes"><img width="80%" alt="Hello, I'm Ahmad. I do everything!" src="./assets/gh-readme-header.png" /></a></p>
+<p align="left">
   <a href="https://www.linkedin.com/in/ahmad-muhni-144a362aa/">
    <img alt="Awesome" src="https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white">
   </a>
