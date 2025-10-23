@@ -1,19 +1,13 @@
-<h1 align="left" id="macropower-title"> konichiwa Watashi Ryuhan</h1>
+<h1 align="left" id="macropower-title"> konichiwa Watashi Ahmad</h1>
 <p align="left">
-  <a href="https://www.linkedin.com/in/jp-ryuhan-minamoto/">
+  <a href="https://www.linkedin.com/in/ahmad-muhni-144a362aa/">
    <img alt="Awesome" src="https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white">
-  </a>
-  <a href="https://www.cloudskillsboost.google/public_profiles/7b545e20-e4e6-42d0-99a6-1015ae0d63e8">
-   <img alt="GCP" src="https://img.shields.io/badge/Google Cloud Profile-%234285F4.svg?style=for-the-badge&color=yellow&logo=google-cloud&logoColor=white">
   </a>
    <a href="https://ryuhanbio.vercel.app">
    <img alt="Portfolio" src="https://img.shields.io/badge/website-purple?style=for-the-badge&logo=next.js&logoColor=white">
   </a>
-  <a href="https://github.com/ryuhandev">
+  <a href="https://github.com/ClovisReyes">
      <img src="https://komarev.com/ghpvc/?username=ryuhandev&style=for-the-badge&color=yellow" alt="page views">
-  </a>
- <a href="https://github.com/?tab=followers">
-    <img alt="GitHub followers" src="https://img.shields.io/github/followers/ryuhandev?color=blue&logo=github&style=for-the-badge">
   </a>
 </p>
 
@@ -28,16 +22,12 @@ Here are some ideas to get you started:
 ```bash
 #!/bin/bash
 
-🔭 currentJob=" Students :D"
-🌱 learning=" Learning about: Lua, React, and AI"
-🏔️ collaboration=" Tensura Interactive Project"
-💬 askMeAbout=" Anime, React, API, And More :D"
-📫 howToReachMe=" linkedin.com/in/jp-ryuhan-minamoto"
-🏎️ pronouns="Yuhan, Ryuhan, Han, Ohan"
-🤖 funFact=" AnimeLovers :D"
-
-info="$currentJob\n$learning\n$collaboration\n$askMeAbout\n$howToReachMe\
-n$pronouns\n$funFact"
+🔭 CurrentJob= "IT Support Specialist "
+🌱 Learning About= "JavaScript, HTML, and AI"
+💬 AskMeAbout= "Anime, React, API, And More :D"
+📫 howToReachMe= "https://www.linkedin.com/in/ahmad-muhni-144a362aa/"
+🏎️ Pronouns= "Ahmad, Muhni"
+🤖 FunFact= "AnimeLovers"
 
 echo -e "$info"
 
