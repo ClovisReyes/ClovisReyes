@@ -1,4 +1,4 @@
-<h1 align="left" id="macropower-title"> konichiwa Watashi Ahmad</h1>
+<h1 align="left" id="macropower-title"> Konichiwa Watashi Ahmad</h1>
 <p align="left">
   <a href="https://www.linkedin.com/in/ahmad-muhni-144a362aa/">
    <img alt="Awesome" src="https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white">
@@ -25,7 +25,6 @@ Here are some ideas to get you started:
 🔭 CurrentJob= "IT Support Specialist "
 🌱 Learning About= "JavaScript, HTML, and AI"
 💬 AskMeAbout= "Anime, React, API, And More :D"
-📫 howToReachMe= "https://www.linkedin.com/in/ahmad-muhni-144a362aa/"
 🏎️ Pronouns= "Ahmad, Muhni"
 🤖 FunFact= "AnimeLovers"
 
