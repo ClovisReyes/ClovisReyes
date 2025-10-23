@@ -1,5 +1,5 @@
 <h1 align="left" id="macropower-title"> Konichiwa Watashi Ahmad</h1>
-<p align="left">
+<p align="center">
   <a href="https://www.linkedin.com/in/ahmad-muhni-144a362aa/">
    <img alt="Awesome" src="https://img.shields.io/badge/LinkedIn-0077B5?style=for-the-badge&logo=linkedin&logoColor=white">
   </a>
