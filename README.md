@@ -7,7 +7,7 @@
    <img alt="Portfolio" src="https://img.shields.io/badge/website-purple?style=for-the-badge&logo=next.js&logoColor=white">
   </a>
   <a href="https://github.com/ClovisReyes">
-     <img src="https://komarev.com/ghpvc/?username=ryuhandev&style=for-the-badge&color=yellow" alt="page views">
+     <img src="https://komarev.com/ghpvc/?username=ClovisReyes&style=for-the-badge&color=yellow" alt="page views">
   </a>
 </p>
 
