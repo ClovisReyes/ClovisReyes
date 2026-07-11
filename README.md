@@ -24,7 +24,7 @@ Here are some ideas to get you started:
 
 🔭 CurrentJob= "IT Support Specialist "
 🌱 Learning About= "JavaScript, HTML, and AI"
-💬 AskMeAbout= "Anime, React, API, And More :D"
+💬 AskMeAbout= "Anime, Computer, Game, And More :D"
 🏎️ Pronouns= "Ahmad, Muhni"
 🤖 FunFact= "AnimeLovers"
 
