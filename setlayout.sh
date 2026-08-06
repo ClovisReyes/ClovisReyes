@@ -74,33 +74,38 @@ for pkg in $ARRAY_CLONES; do
 done
 printf "---------------------------------------------------\n"
 
-read_tty_or_stdin() {
+read_input_safe() {
+    prompt_msg="$1"
+    printf "%b" "$prompt_msg" >&2
+    
+    input_val=""
     if [ -c /dev/tty ]; then
-        read TMP_INPUT </dev/tty 2>/dev/null || read TMP_INPUT
-    else
-        read TMP_INPUT
+        read input_val </dev/tty 2>/dev/null
     fi
-    echo "$TMP_INPUT"
+    
+    if [ -z "$input_val" ]; then
+        if ! read input_val 2>/dev/null; then
+            echo "EOF_DETECTED"
+            return 1
+        fi
+    fi
+    echo "$input_val"
+    return 0
 }
 
 SELECTED_PACKAGES=""
-ATTEMPTS=0
 while [ -z "$SELECTED_PACKAGES" ]; do
-    ATTEMPTS=$((ATTEMPTS+1))
     if [ -n "$ARG_SELECTION" ]; then
         USER_INPUT="$ARG_SELECTION"
     else
-        printf "${CYAN}Pilih nomor (contoh: 1,3,5) atau 'all': ${NC}"
-        USER_INPUT=$(read_tty_or_stdin)
+        USER_INPUT=$(read_input_safe "${CYAN}Pilih nomor (contoh: 1,3,5) atau 'all': ${NC}")
+        if [ "$USER_INPUT" = "EOF_DETECTED" ] || [ -z "$USER_INPUT" ]; then
+            log_status "Deteksi Pipe/Non-Interactive (curl | sh). Menggunakan default: 'all'"
+            USER_INPUT="all"
+        fi
     fi
     
     USER_INPUT_CLEAN=$(echo "$USER_INPUT" | tr -d ' \r\t')
-    
-    # Non-interactive pipe fallback: if empty input and no args, default to 'all'
-    if [ -z "$USER_INPUT_CLEAN" ] && [ -z "$ARG_SELECTION" ] && [ "$ATTEMPTS" -gt 2 ]; then
-        log_status "Input tertutup (Pipe Mode). Menggunakan pilihan default: 'all'"
-        USER_INPUT_CLEAN="all"
-    fi
 
     if [ "$USER_INPUT_CLEAN" = "all" ] || [ "$USER_INPUT_CLEAN" = "ALL" ]; then
         SELECTED_PACKAGES=$ARRAY_CLONES
@@ -139,23 +144,18 @@ for p in $SELECTED_PACKAGES; do COUNT=$((COUNT+1)); done
 
 # 3. MANDATORY ORIENTATION SELECTION
 ORIENT_CHOICE=""
-ATTEMPTS_O=0
 while [ -z "$ORIENT_CHOICE" ]; do
-    ATTEMPTS_O=$((ATTEMPTS_O+1))
     if [ -n "$ARG_ORIENT" ]; then
         ORIENT_INPUT="$ARG_ORIENT"
     else
-        printf "${CYAN}Pilih Orientasi Layar [H] Horizontal / [V] Vertical: ${NC}"
-        ORIENT_INPUT=$(read_tty_or_stdin)
+        ORIENT_INPUT=$(read_input_safe "${CYAN}Pilih Orientasi Layar [H] Horizontal / [V] Vertical: ${NC}")
+        if [ "$ORIENT_INPUT" = "EOF_DETECTED" ] || [ -z "$ORIENT_INPUT" ]; then
+            log_status "Deteksi Pipe/Non-Interactive (curl | sh). Menggunakan default: 'H'"
+            ORIENT_INPUT="H"
+        fi
     fi
     
     INPUT_CLEAN=$(echo "$ORIENT_INPUT" | tr -d ' \r\t' | tr '[:lower:]' '[:upper:]')
-    
-    # Non-interactive pipe fallback: default to 'H'
-    if [ -z "$INPUT_CLEAN" ] && [ -z "$ARG_ORIENT" ] && [ "$ATTEMPTS_O" -gt 2 ]; then
-        log_status "Input tertutup (Pipe Mode). Menggunakan orientasi default: 'H'"
-        INPUT_CLEAN="H"
-    fi
 
     if [ "$INPUT_CLEAN" = "H" ] || [ "$INPUT_CLEAN" = "V" ]; then
         ORIENT_CHOICE=$INPUT_CLEAN
