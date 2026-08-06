@@ -6,16 +6,6 @@ STATUS_BAR_HEIGHT=20
 HEADER_HEIGHT=36
 LAUNCH_DELAY=5
 
-IS_RESET_MODE=0
-if [ "$1" = "reset" ] || [ "$1" = "RESET" ]; then
-    IS_RESET_MODE=1
-    ARG_SELECTION="$2"
-    ARG_ORIENT=""
-else
-    ARG_SELECTION="$1"
-    ARG_ORIENT="$2"
-fi
-
 CYAN='\033[0;36m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -58,6 +48,9 @@ clean_and_inject_window_keys() {
     chmod 444 "$xml_file" >/dev/null 2>&1
 }
 
+ARG_SELECTION="$1"
+ARG_ORIENT="$2"
+
 # 1. SCANNING PACKAGES (SIMPLE PACKAGE NAME ORDER)
 log_status "Memindai aplikasi..."
 ALL_CLONES=$(pm list packages | grep "com.roblox.*" | cut -d':' -f2 | sort | tr '\n' ' ')
@@ -81,17 +74,34 @@ for pkg in $ARRAY_CLONES; do
 done
 printf "---------------------------------------------------\n"
 
+read_tty_or_stdin() {
+    if [ -c /dev/tty ]; then
+        read TMP_INPUT </dev/tty 2>/dev/null || read TMP_INPUT
+    else
+        read TMP_INPUT
+    fi
+    echo "$TMP_INPUT"
+}
+
 SELECTED_PACKAGES=""
+ATTEMPTS=0
 while [ -z "$SELECTED_PACKAGES" ]; do
+    ATTEMPTS=$((ATTEMPTS+1))
     if [ -n "$ARG_SELECTION" ]; then
         USER_INPUT="$ARG_SELECTION"
     else
         printf "${CYAN}Pilih nomor (contoh: 1,3,5) atau 'all': ${NC}"
-        read USER_INPUT
+        USER_INPUT=$(read_tty_or_stdin)
     fi
     
     USER_INPUT_CLEAN=$(echo "$USER_INPUT" | tr -d ' \r\t')
     
+    # Non-interactive pipe fallback: if empty input and no args, default to 'all'
+    if [ -z "$USER_INPUT_CLEAN" ] && [ -z "$ARG_SELECTION" ] && [ "$ATTEMPTS" -gt 2 ]; then
+        log_status "Input tertutup (Pipe Mode). Menggunakan pilihan default: 'all'"
+        USER_INPUT_CLEAN="all"
+    fi
+
     if [ "$USER_INPUT_CLEAN" = "all" ] || [ "$USER_INPUT_CLEAN" = "ALL" ]; then
         SELECTED_PACKAGES=$ARRAY_CLONES
     else
@@ -127,146 +137,128 @@ done
 COUNT=0
 for p in $SELECTED_PACKAGES; do COUNT=$((COUNT+1)); done
 
-if [ "$IS_RESET_MODE" -eq 1 ]; then
-    log_status "Memulai Reset Layout (${COUNT} Aplikasi)..."
-    idx=0
-    for PKG in $SELECTED_PACKAGES; do
-        PREF_DIR="/data/data/$PKG/shared_prefs"
-        PREF="$PREF_DIR/${PKG}_preferences.xml"
-        
-        printf "${YELLOW}[%d/%d]${NC} Reset Layout -> %s\n" "$((idx+1))" "$COUNT" "$PKG"
-        
-        am force-stop "$PKG" >/dev/null 2>&1
-        
-        if [ -f "$PREF" ]; then
-            chattr -i "$PREF" >/dev/null 2>&1
-            chmod 666 "$PREF" >/dev/null 2>&1
-            sed -i '/name="app_cloner_.*window_/d' "$PREF" >/dev/null 2>&1
-        fi
-        
-        am start --user 0 -n "$PKG/$ACTIVITY" >/dev/null 2>&1
-        log_status "Jeda 5 detik..."
-        sleep "$LAUNCH_DELAY"
-        
-        idx=$((idx+1))
-    done
-    echo "---------------------------------------------------"
-    log_success "SELESAI! ${COUNT} aplikasi dikembalikan ke layout default."
+# 3. MANDATORY ORIENTATION SELECTION
+ORIENT_CHOICE=""
+ATTEMPTS_O=0
+while [ -z "$ORIENT_CHOICE" ]; do
+    ATTEMPTS_O=$((ATTEMPTS_O+1))
+    if [ -n "$ARG_ORIENT" ]; then
+        ORIENT_INPUT="$ARG_ORIENT"
+    else
+        printf "${CYAN}Pilih Orientasi Layar [H] Horizontal / [V] Vertical: ${NC}"
+        ORIENT_INPUT=$(read_tty_or_stdin)
+    fi
+    
+    INPUT_CLEAN=$(echo "$ORIENT_INPUT" | tr -d ' \r\t' | tr '[:lower:]' '[:upper:]')
+    
+    # Non-interactive pipe fallback: default to 'H'
+    if [ -z "$INPUT_CLEAN" ] && [ -z "$ARG_ORIENT" ] && [ "$ATTEMPTS_O" -gt 2 ]; then
+        log_status "Input tertutup (Pipe Mode). Menggunakan orientasi default: 'H'"
+        INPUT_CLEAN="H"
+    fi
+
+    if [ "$INPUT_CLEAN" = "H" ] || [ "$INPUT_CLEAN" = "V" ]; then
+        ORIENT_CHOICE=$INPUT_CLEAN
+    else
+        log_error "Input tidak valid!"
+        ARG_ORIENT=""
+    fi
+done
+
+RAW_SIZE=$(wm size | awk '{print $3}')
+DIM1=$(echo "$RAW_SIZE" | cut -d'x' -f1)
+DIM2=$(echo "$RAW_SIZE" | cut -d'x' -f2)
+
+if [ "$DIM1" -gt "$DIM2" ]; then
+    MAX_DIM=$DIM1
+    MIN_DIM=$DIM2
 else
-    # 3. MANDATORY ORIENTATION SELECTION
-    ORIENT_CHOICE=""
-    while [ -z "$ORIENT_CHOICE" ]; do
-        if [ -n "$ARG_ORIENT" ]; then
-            ORIENT_INPUT="$ARG_ORIENT"
-        else
-            printf "${CYAN}Pilih Orientasi Layar [H] Horizontal / [V] Vertical: ${NC}"
-            read ORIENT_INPUT
-        fi
-        
-        INPUT_CLEAN=$(echo "$ORIENT_INPUT" | tr -d ' \r\t' | tr '[:lower:]' '[:upper:]')
-        if [ "$INPUT_CLEAN" = "H" ] || [ "$INPUT_CLEAN" = "V" ]; then
-            ORIENT_CHOICE=$INPUT_CLEAN
-        else
-            log_error "Input tidak valid!"
-            ARG_ORIENT=""
-        fi
-    done
-
-    RAW_SIZE=$(wm size | awk '{print $3}')
-    DIM1=$(echo "$RAW_SIZE" | cut -d'x' -f1)
-    DIM2=$(echo "$RAW_SIZE" | cut -d'x' -f2)
-
-    if [ "$DIM1" -gt "$DIM2" ]; then
-        MAX_DIM=$DIM1
-        MIN_DIM=$DIM2
-    else
-        MAX_DIM=$DIM2
-        MIN_DIM=$DIM1
-    fi
-
-    if [ "$ORIENT_CHOICE" = "V" ]; then
-        MODE_NAME="VERTICAL (Portrait)"
-        W=$MIN_DIM
-        H=$MAX_DIM
-
-        case $COUNT in
-            2) COLS=1; ROWS=2 ;;
-            3) COLS=1; ROWS=3 ;;
-            4) COLS=2; ROWS=2 ;;
-            5|6) COLS=2; ROWS=3 ;;
-            7|8) COLS=2; ROWS=4 ;;
-            9|10) COLS=2; ROWS=5 ;;
-            *)
-                COLS=2
-                ROWS=$(((COUNT + COLS - 1) / COLS))
-                ;;
-        esac
-    else
-        MODE_NAME="HORIZONTAL (Landscape)"
-        W=$MAX_DIM
-        H=$MIN_DIM
-
-        case $COUNT in
-            2) COLS=2; ROWS=1 ;;
-            3) COLS=3; ROWS=1 ;;
-            4) COLS=2; ROWS=2 ;;
-            5|6) COLS=3; ROWS=2 ;;
-            7|8|9) COLS=3; ROWS=3 ;;
-            10|11|12) COLS=4; ROWS=3 ;;
-            *)
-                COLS=4
-                ROWS=$(((COUNT + COLS - 1) / COLS))
-                ;;
-        esac
-    fi
-
-    SW=$W; SH=$H
-
-    TOTAL_HEADERS=$((ROWS * HEADER_HEIGHT))
-    USABLE_GAME_H=$((SH - STATUS_BAR_HEIGHT - TOTAL_HEADERS))
-
-    GW=$((SW / COLS))
-    GH=$((USABLE_GAME_H / ROWS))
-
-    log_status "Mode Grid: ${MODE_NAME} ${ROWS}x${COLS} (${COUNT} Aplikasi)"
-
-    # 4. LIGHTWEIGHT EXECUTION
-    idx=0
-    for PKG in $SELECTED_PACKAGES; do
-        PREF_DIR="/data/data/$PKG/shared_prefs"
-        PREF="$PREF_DIR/${PKG}_preferences.xml"
-        
-        row=$((idx / COLS))
-        col=$((idx % COLS))
-        
-        HEADER_OFFSET=$(((row + 1) * HEADER_HEIGHT))
-        
-        L=$((col * GW))
-        T=$((STATUS_BAR_HEIGHT + (row * GH) + HEADER_OFFSET))
-        R=$(((col == COLS - 1) ? SW : (L + GW)))
-        B=$(((row == ROWS - 1) ? SH : (T + GH)))
-
-        printf "${GREEN}[%d/%d]${NC} Setup Grid Layout -> %s\n" "$((idx+1))" "$COUNT" "$PKG"
-        
-        am force-stop "$PKG" >/dev/null 2>&1
-        
-        mkdir -p "$PREF_DIR" >/dev/null 2>&1
-        if [ ! -f "$PREF" ]; then
-            echo '<?xml version="1.0" encoding="utf-8" standalone="yes"?>' > "$PREF"
-            echo '<map>' >> "$PREF"
-            echo '</map>' >> "$PREF"
-        fi
-
-        # Clean old entries & inject exact grid window coordinates
-        clean_and_inject_window_keys "$PREF" "$L" "$T" "$R" "$B"
-
-        am start --user 0 -n "$PKG/$ACTIVITY" >/dev/null 2>&1
-        log_status "Jeda 5 detik..."
-        sleep "$LAUNCH_DELAY"
-
-        idx=$((idx+1))
-    done
-
-    echo "---------------------------------------------------"
-    log_success "SELESAI! ${COUNT} aplikasi terbuka di Grid ${MODE_NAME}."
+    MAX_DIM=$DIM2
+    MIN_DIM=$DIM1
 fi
+
+if [ "$ORIENT_CHOICE" = "V" ]; then
+    MODE_NAME="VERTICAL (Portrait)"
+    W=$MIN_DIM
+    H=$MAX_DIM
+
+    case $COUNT in
+        2) COLS=1; ROWS=2 ;;
+        3) COLS=1; ROWS=3 ;;
+        4) COLS=2; ROWS=2 ;;
+        5|6) COLS=2; ROWS=3 ;;
+        7|8) COLS=2; ROWS=4 ;;
+        9|10) COLS=2; ROWS=5 ;;
+        *)
+            COLS=2
+            ROWS=$(((COUNT + COLS - 1) / COLS))
+            ;;
+    esac
+else
+    MODE_NAME="HORIZONTAL (Landscape)"
+    W=$MAX_DIM
+    H=$MIN_DIM
+
+    case $COUNT in
+        2) COLS=2; ROWS=1 ;;
+        3) COLS=3; ROWS=1 ;;
+        4) COLS=2; ROWS=2 ;;
+        5|6) COLS=3; ROWS=2 ;;
+        7|8|9) COLS=3; ROWS=3 ;;
+        10|11|12) COLS=4; ROWS=3 ;;
+        *)
+            COLS=4
+            ROWS=$(((COUNT + COLS - 1) / COLS))
+            ;;
+    esac
+fi
+
+SW=$W; SH=$H
+
+TOTAL_HEADERS=$((ROWS * HEADER_HEIGHT))
+USABLE_GAME_H=$((SH - STATUS_BAR_HEIGHT - TOTAL_HEADERS))
+
+GW=$((SW / COLS))
+GH=$((USABLE_GAME_H / ROWS))
+
+log_status "Mode Grid: ${MODE_NAME} ${ROWS}x${COLS} (${COUNT} Aplikasi)"
+
+# 4. LIGHTWEIGHT EXECUTION
+idx=0
+for PKG in $SELECTED_PACKAGES; do
+    PREF_DIR="/data/data/$PKG/shared_prefs"
+    PREF="$PREF_DIR/${PKG}_preferences.xml"
+    
+    row=$((idx / COLS))
+    col=$((idx % COLS))
+    
+    HEADER_OFFSET=$(((row + 1) * HEADER_HEIGHT))
+    
+    L=$((col * GW))
+    T=$((STATUS_BAR_HEIGHT + (row * GH) + HEADER_OFFSET))
+    R=$(((col == COLS - 1) ? SW : (L + GW)))
+    B=$(((row == ROWS - 1) ? SH : (T + GH)))
+
+    printf "${GREEN}[%d/%d]${NC} Setup Grid Layout -> %s\n" "$((idx+1))" "$COUNT" "$PKG"
+    
+    am force-stop "$PKG" >/dev/null 2>&1
+    
+    mkdir -p "$PREF_DIR" >/dev/null 2>&1
+    if [ ! -f "$PREF" ]; then
+        echo '<?xml version="1.0" encoding="utf-8" standalone="yes"?>' > "$PREF"
+        echo '<map>' >> "$PREF"
+        echo '</map>' >> "$PREF"
+    fi
+
+    # Clean old entries & inject exact grid window coordinates
+    clean_and_inject_window_keys "$PREF" "$L" "$T" "$R" "$B"
+
+    am start --user 0 -n "$PKG/$ACTIVITY" >/dev/null 2>&1
+    log_status "Jeda 5 detik..."
+    sleep "$LAUNCH_DELAY"
+
+    idx=$((idx+1))
+done
+
+echo "---------------------------------------------------"
+log_success "SELESAI! ${COUNT} aplikasi terbuka di Grid ${MODE_NAME}."
