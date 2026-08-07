@@ -1,7 +1,5 @@
 #!/system/bin/sh
 
-ACTIVITY="com.roblox.client.startup.ActivitySplash"
-
 STATUS_BAR_HEIGHT=20
 HEADER_HEIGHT=36
 LAUNCH_DELAY=5
@@ -51,64 +49,34 @@ clean_and_inject_window_keys() {
 ARG_SELECTION="$1"
 ARG_ORIENT="$2"
 
-# 1. SCANNING PACKAGES (100% UNSTOPPABLE 3RD-PARTY CLONE DISCOVERY)
-log_status "Memindai aplikasi..."
+# 1. SCANNING ALL INSTALLED PACKAGES (INCLUDING EXTERNAL STORAGE)
+log_status "Memindai seluruh aplikasi terpasang..."
 
-RAW_3RD=$(pm list packages -3 2>/dev/null | cut -d':' -f2)
+RAW_PACKAGES=$(pm list packages -u 2>/dev/null | cut -d':' -f2 | sort -u | tr '\n' ' ')
+[ -z "$RAW_PACKAGES" ] && RAW_PACKAGES=$(pm list packages 2>/dev/null | cut -d':' -f2 | sort -u | tr '\n' ' ')
 
-MATCHED_PACKAGES=""
-for pkg in $RAW_3RD; do
-    [ "$pkg" = "com.noir.rejoiner" ] && continue
-    [ "$pkg" = "com.noir.autofit" ] && continue
-    [ "$pkg" = "com.topjohnwu.magisk" ] && continue
-    [ "$pkg" = "io.github.rina.ksu" ] && continue
-    
-    # Matching strategy:
-    # 1. Name contains roblox, clone, sultan, or seiy
-    # 2. Or shared_prefs contains App Cloner / Roblox data
-    if echo "$pkg" | grep -E -i "roblox|clone|sultan|seiy" >/dev/null 2>&1; then
-        MATCHED_PACKAGES="$MATCHED_PACKAGES $pkg"
-    elif [ -d "/data/data/$pkg/shared_prefs" ]; then
-        if grep -r -i -E "app_cloner|roblox|sultan" "/data/data/$pkg/shared_prefs" 2>/dev/null | head -n 1 >/dev/null 2>&1; then
-            MATCHED_PACKAGES="$MATCHED_PACKAGES $pkg"
-        fi
-    fi
-done
-
-# Fallback: If no specific match, list all 3rd-party non-system apps
-if [ -z "$MATCHED_PACKAGES" ]; then
-    for pkg in $RAW_3RD; do
-        case "$pkg" in
-            com.android.*|com.google.*|com.noir.*|com.topjohnwu.*|io.github.rina.*) ;;
-            *) MATCHED_PACKAGES="$MATCHED_PACKAGES $pkg" ;;
-        esac
-    done
-fi
-
-ALL_CLONES=$(echo "$MATCHED_PACKAGES" | tr ' ' '\n' | grep -v '^$' | sort -u | tr '\n' ' ')
-
-if [ -z "$ALL_CLONES" ]; then
+if [ -z "$RAW_PACKAGES" ]; then
     log_error "Tidak ada aplikasi ditemukan!"
     exit 1
 fi
 
-set -- $ALL_CLONES
+set -- $RAW_PACKAGES
 ARRAY_CLONES="$@"
 TOTAL_FOUND=$#
 
-# 2. SELECTION MENU WITH STRICT INPUT VALIDATION
-printf "${YELLOW}Ditemukan %s Aplikasi:${NC}\n" "$TOTAL_FOUND"
+# 2. SELECTION MENU WITH EXPLICIT MANUAL NUMBER INPUT (NO 'ALL' OPTION)
+printf "${YELLOW}Ditemukan %s Aplikasi Terpasang:${NC}\n" "$TOTAL_FOUND"
 printf "---------------------------------------------------\n"
 i=1
 for pkg in $ARRAY_CLONES; do
-    printf "  [%2d] %s\n" "$i" "$pkg"
+    printf "  [%3d] %s\n" "$i" "$pkg"
     i=$((i+1))
 done
 printf "---------------------------------------------------\n"
 
 read_input_safe() {
     prompt_msg="$1"
-    printf "%b" "$prompt_msg" >&2
+    [ -n "$prompt_msg" ] && printf "%b" "$prompt_msg" >&2
     
     input_val=""
     if [ -c /dev/tty ]; then
@@ -130,44 +98,46 @@ while [ -z "$SELECTED_PACKAGES" ]; do
     if [ -n "$ARG_SELECTION" ]; then
         USER_INPUT="$ARG_SELECTION"
     else
-        USER_INPUT=$(read_input_safe "${CYAN}Pilih nomor (contoh: 1,3,5) atau 'all': ${NC}")
-        if [ "$USER_INPUT" = "EOF_DETECTED" ] || [ -z "$USER_INPUT" ]; then
-            log_status "Deteksi Pipe/Non-Interactive (curl | sh). Menggunakan default: 'all'"
-            USER_INPUT="all"
+        USER_INPUT=$(read_input_safe "${CYAN}Masukkan nomor aplikasi (contoh: 30,31,32,33,34): ${NC}")
+        if [ "$USER_INPUT" = "EOF_DETECTED" ]; then
+            log_error "Saluran masukan tertutup. Silakan jalankan perintah dengan nomor: sh setlayout.sh 30,31,32,33,34 H"
+            exit 1
         fi
     fi
     
     USER_INPUT_CLEAN=$(echo "$USER_INPUT" | tr -d ' \r\t')
 
-    if [ "$USER_INPUT_CLEAN" = "all" ] || [ "$USER_INPUT_CLEAN" = "ALL" ]; then
-        SELECTED_PACKAGES=$ARRAY_CLONES
-    else
-        USER_CHOICE=$(echo "$USER_INPUT_CLEAN" | tr ',' ' ')
-        VALID=1
-        TMP_SELECTION=""
-        
-        for num in $USER_CHOICE; do
-            num_clean=$(echo "$num" | tr -cd '0-9')
-            if [ -n "$num_clean" ]; then
-                if [ "$num_clean" -ge 1 ] && [ "$num_clean" -le "$TOTAL_FOUND" ]; then
-                    val=$(echo "$ARRAY_CLONES" | awk -v n="$num_clean" '{print $n}')
-                    [ -n "$val" ] && TMP_SELECTION="$TMP_SELECTION $val"
-                else
-                    VALID=0
-                    break
-                fi
+    if [ -z "$USER_INPUT_CLEAN" ]; then
+        log_error "Input tidak boleh kosong! Masukkan nomor aplikasi (contoh: 30,31,32,33,34)."
+        ARG_SELECTION=""
+        continue
+    fi
+
+    USER_CHOICE=$(echo "$USER_INPUT_CLEAN" | tr ',' ' ')
+    VALID=1
+    TMP_SELECTION=""
+    
+    for num in $USER_CHOICE; do
+        num_clean=$(echo "$num" | tr -cd '0-9')
+        if [ -n "$num_clean" ]; then
+            if [ "$num_clean" -ge 1 ] && [ "$num_clean" -le "$TOTAL_FOUND" ]; then
+                val=$(echo "$ARRAY_CLONES" | awk -v n="$num_clean" '{print $n}')
+                [ -n "$val" ] && TMP_SELECTION="$TMP_SELECTION $val"
             else
                 VALID=0
                 break
             fi
-        done
-        
-        if [ "$VALID" -eq 1 ] && [ -n "$TMP_SELECTION" ]; then
-            SELECTED_PACKAGES=$TMP_SELECTION
         else
-            log_error "Input tidak valid!"
-            ARG_SELECTION=""
+            VALID=0
+            break
         fi
+    done
+    
+    if [ "$VALID" -eq 1 ] && [ -n "$TMP_SELECTION" ]; then
+        SELECTED_PACKAGES=$TMP_SELECTION
+    else
+        log_error "Input tidak valid! Masukkan nomor aplikasi yang tersedia (contoh: 30,31,32,33,34)."
+        ARG_SELECTION=""
     fi
 done
 
@@ -181,8 +151,7 @@ while [ -z "$ORIENT_CHOICE" ]; do
         ORIENT_INPUT="$ARG_ORIENT"
     else
         ORIENT_INPUT=$(read_input_safe "${CYAN}Pilih Orientasi Layar [H] Horizontal / [V] Vertical: ${NC}")
-        if [ "$ORIENT_INPUT" = "EOF_DETECTED" ] || [ -z "$ORIENT_INPUT" ]; then
-            log_status "Deteksi Pipe/Non-Interactive (curl | sh). Menggunakan default: 'H'"
+        if [ "$ORIENT_INPUT" = "EOF_DETECTED" ]; then
             ORIENT_INPUT="H"
         fi
     fi
@@ -192,7 +161,7 @@ while [ -z "$ORIENT_CHOICE" ]; do
     if [ "$INPUT_CLEAN" = "H" ] || [ "$INPUT_CLEAN" = "V" ]; then
         ORIENT_CHOICE=$INPUT_CLEAN
     else
-        log_error "Input tidak valid!"
+        log_error "Input tidak valid! Pilih H atau V."
         ARG_ORIENT=""
     fi
 done
@@ -255,7 +224,7 @@ GH=$((USABLE_GAME_H / ROWS))
 
 log_status "Mode Grid: ${MODE_NAME} ${ROWS}x${COLS} (${COUNT} Aplikasi)"
 
-# 4. LIGHTWEIGHT EXECUTION WITH DUAL LAUNCH METHOD
+# 4. LIGHTWEIGHT UNIVERSAL EXECUTION FOR ANY APP
 idx=0
 for PKG in $SELECTED_PACKAGES; do
     PREF_DIR="/data/data/$PKG/shared_prefs"
@@ -285,8 +254,17 @@ for PKG in $SELECTED_PACKAGES; do
     # Clean old entries & inject exact grid window coordinates
     clean_and_inject_window_keys "$PREF" "$L" "$T" "$R" "$B"
 
-    # Dual Launch: Monkey launcher tool + am start fallback
-    monkey -p "$PKG" -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1 || am start --user 0 -n "$PKG/$ACTIVITY" >/dev/null 2>&1
+    # Universal Launch: 1. Try monkey launcher tool, 2. Try dynamic MAIN activity
+    MAIN_ACT=$(dumpsys package "$PKG" 2>/dev/null | grep -A 2 -i "android.intent.action.MAIN" | grep -o "$PKG/[^ ]*" | head -n 1)
+
+    if monkey -p "$PKG" -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1; then
+        :
+    elif [ -n "$MAIN_ACT" ]; then
+        am start --user 0 -n "$MAIN_ACT" >/dev/null 2>&1
+    else
+        am start --user 0 -n "$PKG/com.roblox.client.startup.ActivitySplash" >/dev/null 2>&1
+    fi
+
     log_status "Jeda 5 detik..."
     sleep "$LAUNCH_DELAY"
 
