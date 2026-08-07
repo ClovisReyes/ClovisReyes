@@ -51,20 +51,44 @@ clean_and_inject_window_keys() {
 ARG_SELECTION="$1"
 ARG_ORIENT="$2"
 
-# 1. SCANNING PACKAGES (100% AUTOMATIC COMPONENT DETECTION FOR ALL CLONES)
-log_status "Memindai aplikasi Roblox..."
+# 1. SCANNING PACKAGES (100% UNSTOPPABLE 3RD-PARTY CLONE DISCOVERY)
+log_status "Memindai aplikasi..."
 
-# Method A: Query dumpsys package for any package containing Roblox ActivitySplash
-PKGS_A=$(dumpsys package 2>/dev/null | grep -B 3 "com.roblox.client.startup.ActivitySplash" | grep -o 'Package \[[^]]*\]' | cut -d'[' -f2 | tr -d ']' | sort -u)
+RAW_3RD=$(pm list packages -3 2>/dev/null | cut -d':' -f2)
 
-# Method B: Query pm list packages for roblox, clone, or sultan keywords
-PKGS_B=$(pm list packages 2>/dev/null | grep -E -i "roblox|clone|sultan" | cut -d':' -f2 | sort -u)
+MATCHED_PACKAGES=""
+for pkg in $RAW_3RD; do
+    [ "$pkg" = "com.noir.rejoiner" ] && continue
+    [ "$pkg" = "com.noir.autofit" ] && continue
+    [ "$pkg" = "com.topjohnwu.magisk" ] && continue
+    [ "$pkg" = "io.github.rina.ksu" ] && continue
+    
+    # Matching strategy:
+    # 1. Name contains roblox, clone, sultan, or seiy
+    # 2. Or shared_prefs contains App Cloner / Roblox data
+    if echo "$pkg" | grep -E -i "roblox|clone|sultan|seiy" >/dev/null 2>&1; then
+        MATCHED_PACKAGES="$MATCHED_PACKAGES $pkg"
+    elif [ -d "/data/data/$pkg/shared_prefs" ]; then
+        if grep -r -i -E "app_cloner|roblox|sultan" "/data/data/$pkg/shared_prefs" 2>/dev/null | head -n 1 >/dev/null 2>&1; then
+            MATCHED_PACKAGES="$MATCHED_PACKAGES $pkg"
+        fi
+    fi
+done
 
-# Combine and deduplicate packages
-ALL_CLONES=$(echo "$PKGS_A $PKGS_B" | tr ' ' '\n' | grep -v '^$' | sort -u | tr '\n' ' ')
+# Fallback: If no specific match, list all 3rd-party non-system apps
+if [ -z "$MATCHED_PACKAGES" ]; then
+    for pkg in $RAW_3RD; do
+        case "$pkg" in
+            com.android.*|com.google.*|com.noir.*|com.topjohnwu.*|io.github.rina.*) ;;
+            *) MATCHED_PACKAGES="$MATCHED_PACKAGES $pkg" ;;
+        esac
+    done
+fi
+
+ALL_CLONES=$(echo "$MATCHED_PACKAGES" | tr ' ' '\n' | grep -v '^$' | sort -u | tr '\n' ' ')
 
 if [ -z "$ALL_CLONES" ]; then
-    log_error "Tidak ada aplikasi Roblox ditemukan!"
+    log_error "Tidak ada aplikasi ditemukan!"
     exit 1
 fi
 
@@ -231,7 +255,7 @@ GH=$((USABLE_GAME_H / ROWS))
 
 log_status "Mode Grid: ${MODE_NAME} ${ROWS}x${COLS} (${COUNT} Aplikasi)"
 
-# 4. LIGHTWEIGHT EXECUTION
+# 4. LIGHTWEIGHT EXECUTION WITH DUAL LAUNCH METHOD
 idx=0
 for PKG in $SELECTED_PACKAGES; do
     PREF_DIR="/data/data/$PKG/shared_prefs"
@@ -261,7 +285,8 @@ for PKG in $SELECTED_PACKAGES; do
     # Clean old entries & inject exact grid window coordinates
     clean_and_inject_window_keys "$PREF" "$L" "$T" "$R" "$B"
 
-    am start --user 0 -n "$PKG/$ACTIVITY" >/dev/null 2>&1
+    # Dual Launch: Monkey launcher tool + am start fallback
+    monkey -p "$PKG" -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1 || am start --user 0 -n "$PKG/$ACTIVITY" >/dev/null 2>&1
     log_status "Jeda 5 detik..."
     sleep "$LAUNCH_DELAY"
 
