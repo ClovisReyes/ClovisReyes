@@ -51,12 +51,20 @@ clean_and_inject_window_keys() {
 ARG_SELECTION="$1"
 ARG_ORIENT="$2"
 
-# 1. SCANNING PACKAGES (SIMPLE PACKAGE NAME ORDER)
-log_status "Memindai aplikasi..."
-ALL_CLONES=$(pm list packages | grep "com.roblox.*" | cut -d':' -f2 | sort | tr '\n' ' ')
+# 1. SCANNING PACKAGES (100% AUTOMATIC COMPONENT DETECTION FOR ALL CLONES)
+log_status "Memindai aplikasi Roblox..."
+
+# Method A: Query dumpsys package for any package containing Roblox ActivitySplash
+PKGS_A=$(dumpsys package 2>/dev/null | grep -B 3 "com.roblox.client.startup.ActivitySplash" | grep -o 'Package \[[^]]*\]' | cut -d'[' -f2 | tr -d ']' | sort -u)
+
+# Method B: Query pm list packages for roblox, clone, or sultan keywords
+PKGS_B=$(pm list packages 2>/dev/null | grep -E -i "roblox|clone|sultan" | cut -d':' -f2 | sort -u)
+
+# Combine and deduplicate packages
+ALL_CLONES=$(echo "$PKGS_A $PKGS_B" | tr ' ' '\n' | grep -v '^$' | sort -u | tr '\n' ' ')
 
 if [ -z "$ALL_CLONES" ]; then
-    log_error "Tidak ada aplikasi ditemukan!"
+    log_error "Tidak ada aplikasi Roblox ditemukan!"
     exit 1
 fi
 
