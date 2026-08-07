@@ -4,15 +4,7 @@ STATUS_BAR_HEIGHT=20
 HEADER_HEIGHT=36
 LAUNCH_DELAY=5
 
-CYAN='\033[0;36m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-RED='\033[0;31m'
-NC='\033[0m'
-
-log_status() { printf "${CYAN}[*]${NC} %s\n" "$1"; }
-log_success() { printf "${GREEN}[+]${NC} %s\n" "$1"; }
-log_error() { printf "${RED}[!]${NC} %s\n" "$1"; }
+EXCLUDED_PREFIXES="android com.android. com.google.android. com.qualcomm. com.mediatek. com.sec.android. com.xiaomi. com.huawei. org.chromium."
 
 clean_and_inject_window_keys() {
     xml_file="$1"
@@ -21,14 +13,11 @@ clean_and_inject_window_keys() {
     right="$4"
     bottom="$5"
 
-    # 1. Fully unlock file permissions and attributes
     chattr -i "$xml_file" >/dev/null 2>&1
     chmod 666 "$xml_file" >/dev/null 2>&1
 
-    # 2. Remove all old app_cloner window keys to prevent stale/corrupted entries
     sed -i '/name="app_cloner_.*window_/d' "$xml_file" >/dev/null 2>&1
 
-    # 3. Build clean XML block
     prefixes="app_cloner_current_window app_cloner_initial_window app_cloner_window app_cloner_default_window app_cloner_last_window app_cloner_saved_window app_cloner_freeform_window"
     
     xml_block=""
@@ -39,40 +28,15 @@ clean_and_inject_window_keys() {
         xml_block="${xml_block}  <int name=\"${prefix}_bottom\" value=\"${bottom}\" \/>\n"
     done
 
-    # 4. Inject fresh keys right before </map>
     sed -i "s|<\/map>|${xml_block}<\/map>|g" "$xml_file" >/dev/null 2>&1
 
-    # 5. Lock file as read-only (444)
     chmod 444 "$xml_file" >/dev/null 2>&1
 }
 
-ARG_SELECTION="$1"
-ARG_ORIENT="$2"
-
-# 1. SCANNING ALL INSTALLED PACKAGES (INCLUDING EXTERNAL STORAGE)
-log_status "Memindai seluruh aplikasi terpasang..."
-
-RAW_PACKAGES=$(pm list packages -u 2>/dev/null | cut -d':' -f2 | sort -u | tr '\n' ' ')
-[ -z "$RAW_PACKAGES" ] && RAW_PACKAGES=$(pm list packages 2>/dev/null | cut -d':' -f2 | sort -u | tr '\n' ' ')
-
-if [ -z "$RAW_PACKAGES" ]; then
-    log_error "Tidak ada aplikasi ditemukan!"
-    exit 1
-fi
-
-set -- $RAW_PACKAGES
-ARRAY_CLONES="$@"
-TOTAL_FOUND=$#
-
-# 2. SELECTION MENU WITH EXPLICIT MANUAL NUMBER INPUT (NO 'ALL' OPTION)
-printf "${YELLOW}Ditemukan %s Aplikasi Terpasang:${NC}\n" "$TOTAL_FOUND"
-printf "---------------------------------------------------\n"
-i=1
-for pkg in $ARRAY_CLONES; do
-    printf "  [%3d] %s\n" "$i" "$pkg"
-    i=$((i+1))
-done
-printf "---------------------------------------------------\n"
+launch_app() {
+    pkg_name="$1"
+    monkey -p "$pkg_name" -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1
+}
 
 read_input_safe() {
     prompt_msg="$1"
@@ -92,6 +56,55 @@ read_input_safe() {
     echo "$input_val"
     return 0
 }
+
+CYAN='\033[0;36m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
+NC='\033[0m'
+
+log_status() { printf "${CYAN}[*]${NC} %s\n" "$1"; }
+log_success() { printf "${GREEN}[+]${NC} %s\n" "$1"; }
+log_error() { printf "${RED}[!]${NC} %s\n" "$1"; }
+
+ARG_SELECTION="$1"
+ARG_ORIENT="$2"
+
+log_status "Memindai aplikasi terpasang..."
+
+RAW_PACKAGES=$(pm list packages 2>/dev/null | cut -d':' -f2 | sort -u)
+
+FILTERED_PACKAGES=""
+for pkg in $RAW_PACKAGES; do
+    [ -z "$pkg" ] && continue
+    IS_SYS=0
+    for sys_pref in $EXCLUDED_PREFIXES; do
+        case "$pkg" in
+            ${sys_pref}*) IS_SYS=1; break ;;
+        esac
+    done
+    [ "$IS_SYS" -eq 0 ] && FILTERED_PACKAGES="$FILTERED_PACKAGES $pkg"
+done
+
+ALL_CLONES=$(echo "$FILTERED_PACKAGES" | tr ' ' '\n' | grep -v '^$' | sort -u | tr '\n' ' ')
+
+if [ -z "$ALL_CLONES" ]; then
+    log_error "Tidak ada aplikasi ditemukan!"
+    exit 1
+fi
+
+set -- $ALL_CLONES
+ARRAY_CLONES="$@"
+TOTAL_FOUND=$#
+
+printf "${YELLOW}Ditemukan %s Aplikasi Terpasang:${NC}\n" "$TOTAL_FOUND"
+printf "---------------------------------------------------\n"
+i=1
+for pkg in $ARRAY_CLONES; do
+    printf "  [%3d] %s\n" "$i" "$pkg"
+    i=$((i+1))
+done
+printf "---------------------------------------------------\n"
 
 SELECTED_PACKAGES=""
 while [ -z "$SELECTED_PACKAGES" ]; do
@@ -144,7 +157,6 @@ done
 COUNT=0
 for p in $SELECTED_PACKAGES; do COUNT=$((COUNT+1)); done
 
-# 3. MANDATORY ORIENTATION SELECTION
 ORIENT_CHOICE=""
 while [ -z "$ORIENT_CHOICE" ]; do
     if [ -n "$ARG_ORIENT" ]; then
@@ -224,7 +236,6 @@ GH=$((USABLE_GAME_H / ROWS))
 
 log_status "Mode Grid: ${MODE_NAME} ${ROWS}x${COLS} (${COUNT} Aplikasi)"
 
-# 4. LIGHTWEIGHT UNIVERSAL EXECUTION FOR ANY APP
 idx=0
 for PKG in $SELECTED_PACKAGES; do
     PREF_DIR="/data/data/$PKG/shared_prefs"
@@ -251,19 +262,9 @@ for PKG in $SELECTED_PACKAGES; do
         echo '</map>' >> "$PREF"
     fi
 
-    # Clean old entries & inject exact grid window coordinates
     clean_and_inject_window_keys "$PREF" "$L" "$T" "$R" "$B"
 
-    # Universal Launch: 1. Try monkey launcher tool, 2. Try dynamic MAIN activity
-    MAIN_ACT=$(dumpsys package "$PKG" 2>/dev/null | grep -A 2 -i "android.intent.action.MAIN" | grep -o "$PKG/[^ ]*" | head -n 1)
-
-    if monkey -p "$PKG" -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1; then
-        :
-    elif [ -n "$MAIN_ACT" ]; then
-        am start --user 0 -n "$MAIN_ACT" >/dev/null 2>&1
-    else
-        am start --user 0 -n "$PKG/com.roblox.client.startup.ActivitySplash" >/dev/null 2>&1
-    fi
+    launch_app "$PKG"
 
     log_status "Jeda 5 detik..."
     sleep "$LAUNCH_DELAY"
