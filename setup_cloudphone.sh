@@ -47,15 +47,31 @@ log_header "1. MEMPROSES OPSI PENGEMBANG"
 # Logger Buffer 64k
 log_status "Setting Logger Buffer Size -> 64k"
 logcat -G 64K >/dev/null 2>&1
+logcat -G 64k >/dev/null 2>&1
+
 setprop persist.logd.size 64K >/dev/null 2>&1
+setprop persist.logd.size 64k >/dev/null 2>&1
+setprop logd.size 64K >/dev/null 2>&1
+setprop logd.size 64k >/dev/null 2>&1
+
 setprop persist.logd.size.main 64K >/dev/null 2>&1
 setprop persist.logd.size.system 64K >/dev/null 2>&1
 setprop persist.logd.size.radio 64K >/dev/null 2>&1
 setprop persist.logd.size.events 64K >/dev/null 2>&1
 setprop persist.logd.size.crash 64K >/dev/null 2>&1
-setprop logd.size 64K >/dev/null 2>&1
+
+resetprop persist.logd.size 64K >/dev/null 2>&1
+resetprop persist.logd.size 64k >/dev/null 2>&1
+resetprop logd.size 64K >/dev/null 2>&1
+
 settings put global logd_size 64k >/dev/null 2>&1
+settings put global logd_size 64K >/dev/null 2>&1
 settings put global logd_size 65536 >/dev/null 2>&1
+settings put secure logd_size 64k >/dev/null 2>&1
+settings put system logd_size 64k >/dev/null 2>&1
+
+setprop ctl.restart logd >/dev/null 2>&1
+killall -9 logd >/dev/null 2>&1
 am force-stop com.android.settings >/dev/null 2>&1
 log_success "Logger Buffer Size = 64k"
 
@@ -251,9 +267,8 @@ settings put global send_action_app_error 0 >/dev/null 2>&1
 settings put global drop_box_flags 0 >/dev/null 2>&1
 log_success "Scanning & OTA = OFF"
 
-# Disable HW Overlays & Window Blurs
+# Disable Hardware Overlays (Force GPU Compositing) & Window Blurs
 log_status "Setting GPU Compositing & Window Blurs -> OFF"
-service call SurfaceFlinger 1008 i32 1 >/dev/null 2>&1
 setprop debug.sf.disable_hw_overlays 1 >/dev/null 2>&1
 setprop debug.composition.type gpu >/dev/null 2>&1
 settings put global disable_window_blurs 1 >/dev/null 2>&1
@@ -283,11 +298,9 @@ pm trim-caches 1000G >/dev/null 2>&1
 sync >/dev/null 2>&1
 [ "$IS_ROOT" -eq 1 ] && echo 3 > /proc/sys/vm/drop_caches 2>/dev/null 2>&1
 setprop persist.sys.purgeable_assets 1 >/dev/null 2>&1
-setprop sys.use_fifo_ui 1 >/dev/null 2>&1
 setprop debug.performance.tuning 1 >/dev/null 2>&1
 setprop video.accelerate.hw 1 >/dev/null 2>&1
 settings put global max_phantom_processes 2147483647 >/dev/null 2>&1
-settings put global cached_apps_freezer enabled >/dev/null 2>&1
 log_success "Cache Cleaned & RAM Tuning Selesai"
 
 
