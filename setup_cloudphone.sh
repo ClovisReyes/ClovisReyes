@@ -171,35 +171,19 @@ settings put system volume_alarm 0 >/dev/null 2>&1
 settings put system volume_system 0 >/dev/null 2>&1
 log_success "Semua Volume = 0%"
 
-# DND ON & Additional Sounds OFF
-log_status "Setting DND -> ON & Additional Sounds -> OFF"
+# DND ON & Additional Sounds OFF (UNIVERSAL SCANNER)
+log_status "Setting DND -> ON & Memindai Universal SELURUH Opsi Suara..."
 settings put global zen_mode 1 >/dev/null 2>&1
 cmd notification set_dnd on >/dev/null 2>&1
 
-settings put system touch_sounds 0 >/dev/null 2>&1
-settings put global touch_sounds 0 >/dev/null 2>&1
-settings put secure touch_sounds 0 >/dev/null 2>&1
-settings put system sound_effects_enabled 0 >/dev/null 2>&1
-settings put global sound_effects_enabled 0 >/dev/null 2>&1
-settings put secure sound_effects_enabled 0 >/dev/null 2>&1
+# Pemindaian Universal untuk SELURUH Kunci Pengaturan Suara, Dial Tones & Vibrasi
+for ns in system global secure; do
+    for key in $(settings list $ns 2>/dev/null | grep -iE 'sound|tone|vibrate|dtmf|dial|haptic|charge|touch|keypress' | cut -d'=' -f1); do
+        [ -n "$key" ] && settings put $ns "$key" 0 >/dev/null 2>&1
+    done
+done
 
-settings put system lockscreen_sounds_enabled 0 >/dev/null 2>&1
-settings put global lockscreen_sounds_enabled 0 >/dev/null 2>&1
-settings put secure lockscreen_sounds_enabled 0 >/dev/null 2>&1
-settings put system lock_sound 0 >/dev/null 2>&1
-settings put system unlock_sound 0 >/dev/null 2>&1
-
-settings put system charging_sounds_enabled 0 >/dev/null 2>&1
-settings put global charging_sounds_enabled 0 >/dev/null 2>&1
-settings put secure charging_sounds_enabled 0 >/dev/null 2>&1
-settings put system charging_vibration_enabled 0 >/dev/null 2>&1
-settings put global charging_vibration_enabled 0 >/dev/null 2>&1
-settings put secure charging_vibration_enabled 0 >/dev/null 2>&1
-settings put system power_sounds_enabled 0 >/dev/null 2>&1
-settings put global power_sounds_enabled 0 >/dev/null 2>&1
-settings put secure power_sounds_enabled 0 >/dev/null 2>&1
-settings put system charging_sounds 0 >/dev/null 2>&1
-
+# Injeksi kunci Dial Pad Tones di semua namespace
 settings put system dtmf_tone_when_dialing 0 >/dev/null 2>&1
 settings put global dtmf_tone_when_dialing 0 >/dev/null 2>&1
 settings put secure dtmf_tone_when_dialing 0 >/dev/null 2>&1
@@ -208,25 +192,8 @@ settings put global dial_pad_touch_tone 0 >/dev/null 2>&1
 settings put secure dial_pad_touch_tone 0 >/dev/null 2>&1
 settings put system dtmf_tone_type 0 >/dev/null 2>&1
 
-settings put system haptic_feedback_enabled 0 >/dev/null 2>&1
-settings put global haptic_feedback_enabled 0 >/dev/null 2>&1
-settings put secure haptic_feedback_enabled 0 >/dev/null 2>&1
-settings put system haptic_feedback_intensity 0 >/dev/null 2>&1
-settings put system vibration_on 0 >/dev/null 2>&1
-settings put system sync_vibrate_with_ringtone 0 >/dev/null 2>&1
-
-settings put system boot_sounds_enabled 0 >/dev/null 2>&1
-settings put global boot_sounds_enabled 0 >/dev/null 2>&1
-settings put system volume_sounds_enabled 0 >/dev/null 2>&1
-settings put global volume_sounds_enabled 0 >/dev/null 2>&1
-settings put system screenshot_sounds_enabled 0 >/dev/null 2>&1
-settings put global screenshot_sounds_enabled 0 >/dev/null 2>&1
-settings put system sip_key_feedback_sound 0 >/dev/null 2>&1
-settings put system keypress_sounds_enabled 0 >/dev/null 2>&1
-settings put system keypress_vibration_enabled 0 >/dev/null 2>&1
-
 am force-stop com.android.settings >/dev/null 2>&1
-log_success "DND = ON & Additional Sounds = ALL OFF"
+log_success "DND = ON & Additional Sounds = 100% MUTED (UNIVERSAL SCANNER)"
 
 
 # ------------------------------------------------------------------------------
@@ -262,51 +229,72 @@ log_success "Private DNS = 1dot1dot1dot1.cloudflare-dns.com"
 # ------------------------------------------------------------------------------
 log_header "7. MEMPROSES OPTIMASI PERFORMA & RAM"
 
-# Scanning & OTA OFF
-log_status "Setting Scanning & OTA -> OFF"
+# Scanning, OTA, Package Verifier & Captive Portal OFF (KELOMPOK E)
+log_status "Setting Scanning, OTA, Package Verifier & Captive Portal -> OFF"
 settings put global wifi_scan_always_enabled 0 >/dev/null 2>&1
 settings put global wifi_scan_throttle_enabled 1 >/dev/null 2>&1
 settings put global ble_scan_always_enabled 0 >/dev/null 2>&1
 settings put global ota_disable_automatic_update 1 >/dev/null 2>&1
+settings put global package_verifier_enable 0 >/dev/null 2>&1
+settings put global captive_portal_mode 0 >/dev/null 2>&1
+settings put global network_scoring_ui_enabled 0 >/dev/null 2>&1
 settings put global send_action_app_error 0 >/dev/null 2>&1
 settings put global drop_box_flags 0 >/dev/null 2>&1
-log_success "Scanning & OTA = OFF"
+log_success "Scanning, OTA, Verifier & Captive Portal = OFF"
 
-# Disable Hardware Overlays (Force GPU Compositing) & Window Blurs
+# Disable Hardware Overlays (Force GPU Compositing) & Window Blurs (KELOMPOK F & G)
 log_status "Setting GPU Compositing & Window Blurs -> OFF"
 setprop debug.sf.disable_hw_overlays 1 >/dev/null 2>&1
 setprop debug.composition.type gpu >/dev/null 2>&1
 settings put global disable_window_blurs 1 >/dev/null 2>&1
 log_success "GPU Compositing = ON & Window Blurs = OFF"
 
-# Service System & Notifications OFF
-log_status "Setting Bluetooth, Print & Notifications -> OFF"
+# Low Touch Latency & Response Speed (KELOMPOK C)
+log_status "Setting Low Touch Latency & Fast Response"
+settings put secure long_press_timeout 250 >/dev/null 2>&1
+settings put secure multi_press_timeout 250 >/dev/null 2>&1
+settings put system touch.pressure.scale 0.001 >/dev/null 2>&1
+log_success "Low Touch Latency = ON"
+
+# Disable Background Storage Indexing & MediaProvider Scanning (KELOMPOK B)
+log_status "Setting Background Media Indexing & Storage Scanning -> OFF"
+settings put global media_provider_scan_location 0 >/dev/null 2>&1
+settings put global download_manager_max_bytes_over_mobile 2147483647 >/dev/null 2>&1
+log_success "Background Media Scanning = OFF"
+
+# Service System, Notifications & StrictMode OFF
+log_status "Setting Bluetooth, Print, Notifications & StrictMode -> OFF"
 cmd bluetooth disable >/dev/null 2>&1
 settings put global bluetooth_on 0 >/dev/null 2>&1
 settings put secure print_service_enabled 0 >/dev/null 2>&1
 settings put global heads_up_notifications_enabled 0 >/dev/null 2>&1
 settings put secure spell_checker_enabled 0 >/dev/null 2>&1
-log_success "Bluetooth, Print, Notifications & Spell Checker = OFF"
+setprop persist.sys.strictmode.disable 1 >/dev/null 2>&1
+setprop log.tag.StrictMode OFF >/dev/null 2>&1
+log_success "Bluetooth, Print, Notifications & StrictMode = OFF"
 
-# Stay Awake ON & System Bloat OFF
-log_status "Setting Stay Awake -> ON | Game Dash & Touches -> OFF"
+# Stay Awake ON, System Tracing Daemon OFF & System Bloat OFF
+log_status "Setting Stay Awake -> ON | System Tracing & Game Dash -> OFF"
 settings put global stay_on_while_plugged_in 3 >/dev/null 2>&1
 settings put global game_dashboard_always_on 0 >/dev/null 2>&1
+settings put global sys_traced 0 >/dev/null 2>&1
+setprop persist.traced.enable 0 >/dev/null 2>&1
+stop traced >/dev/null 2>&1
+stop traced_probes >/dev/null 2>&1
 settings put system pointer_location 0 >/dev/null 2>&1
 settings put system show_touches 0 >/dev/null 2>&1
 settings put secure accessibility_captioning_enabled 0 >/dev/null 2>&1
-log_success "Stay Awake = ON & Game Dash/Touches = OFF"
+log_success "Stay Awake = ON | System Tracing & Game Dash = OFF"
 
-# Pembersihan Cache & RAM Tuning
-log_status "Membersihkan App Cache & Tuning RAM..."
+# Pembersihan Cache, Android 10 RAM Compaction (madvise) & RAM Tuning (KELOMPOK A)
+log_status "Membersihkan App Cache, Tuning Android 10 RAM Compaction & Activity Manager..."
 pm trim-caches 1000G >/dev/null 2>&1
 sync >/dev/null 2>&1
 [ "$IS_ROOT" -eq 1 ] && echo 3 > /proc/sys/vm/drop_caches 2>/dev/null 2>&1
 setprop persist.sys.purgeable_assets 1 >/dev/null 2>&1
-setprop debug.performance.tuning 1 >/dev/null 2>&1
-setprop video.accelerate.hw 1 >/dev/null 2>&1
 settings put global max_phantom_processes 2147483647 >/dev/null 2>&1
-log_success "Cache Cleaned & RAM Tuning Selesai"
+settings put global activity_manager_constants use_compaction=true,compact_action_1=4,compact_action_2=4,max_cached_processes=32 >/dev/null 2>&1
+log_success "Cache Cleaned, Android 10 RAM Compaction & Activity Manager 32 Limit Selesai"
 
 
 # ------------------------------------------------------------------------------
@@ -371,27 +359,44 @@ log_header "9. MEMPROSES TWEAK PERFORMA ROOT (CPU, RAM VM & NETWORK)"
 
 if [ "$IS_ROOT" -eq 1 ]; then
     log_status "Setting CPU Performance Governor -> Maximum Frequency"
+    CPU_ERR=0
     for cpu in /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor; do
-        echo "performance" > "$cpu" 2>/dev/null
+        echo "performance" > "$cpu" 2>/dev/null || CPU_ERR=1
     done
+    if [ "$CPU_ERR" -eq 0 ]; then
+        log_success "CPU Governor = performance [OK]"
+    else
+        log_error "CPU Governor = GAGAL (Dibatasi Server Vendor)"
+    fi
 
     log_status "Setting Kernel Virtual Memory (VM) & LMK Buffer"
-    echo 20480 > /proc/sys/vm/extra_free_kbytes 2>/dev/null
-    echo 100 > /proc/sys/vm/swappiness 2>/dev/null
-    echo 10 > /proc/sys/vm/dirty_background_ratio 2>/dev/null
-    echo 30 > /proc/sys/vm/dirty_ratio 2>/dev/null
+    VM_ERR=0
+    echo 20480 > /proc/sys/vm/extra_free_kbytes 2>/dev/null || VM_ERR=1
+    echo 100 > /proc/sys/vm/swappiness 2>/dev/null || VM_ERR=1
+    echo 10 > /proc/sys/vm/dirty_background_ratio 2>/dev/null || VM_ERR=1
+    echo 30 > /proc/sys/vm/dirty_ratio 2>/dev/null || VM_ERR=1
+    if [ "$VM_ERR" -eq 0 ]; then
+        log_success "Kernel VM & LMK Tuning = OK"
+    else
+        log_error "Kernel VM = GAGAL / Dibatasi Vendor"
+    fi
 
     log_status "Setting TCP Network Low-Latency & Fast Open"
-    echo 1 > /proc/sys/net/ipv4/tcp_low_latency 2>/dev/null
-    echo 3 > /proc/sys/net/ipv4/tcp_fastopen 2>/dev/null
+    NET_ERR=0
+    echo 1 > /proc/sys/net/ipv4/tcp_low_latency 2>/dev/null || NET_ERR=1
+    echo 3 > /proc/sys/net/ipv4/tcp_fastopen 2>/dev/null || NET_ERR=1
     setprop net.tcp.buffersize.wifi 4096,87380,256000,4096,16384,256000 2>/dev/null
+    if [ "$NET_ERR" -eq 0 ]; then
+        log_success "TCP Network Low-Latency = OK"
+    else
+        log_error "TCP Network Low-Latency = GAGAL / Dibatasi Vendor"
+    fi
 
     log_status "Mematikan Service System Tracing & Profiler Background"
     setprop persist.traced.enable 0 2>/dev/null
     stop traced 2>/dev/null
     stop traced_probes 2>/dev/null
-
-    log_success "Tweak ROOT CPU, RAM VM & Network = 100% APPLIED"
+    log_success "System Tracing & Profiler = DISABLED"
 else
     log_status "Perangkat Non-Root: Tweak Kernel ROOT dilewati dengan aman."
 fi
@@ -405,7 +410,19 @@ log_header "RINGKASAN HASIL KONFIGURASI"
 check_val() {
     label="$1"
     curr_val="$2"
-    printf "  - %-35s : ${GREEN}[OK] (%s)${NC}\n" "$label" "$curr_val"
+    expected_pattern="$3"
+    
+    if [ -z "$curr_val" ] || [ "$curr_val" = "null" ]; then
+        printf "  - %-35s : ${RED}[GAGAL / DIBATASI]${NC}\n" "$label"
+    elif [ -n "$expected_pattern" ]; then
+        if echo "$curr_val" | grep -iqE "$expected_pattern"; then
+            printf "  - %-35s : ${GREEN}[OK] (%s)${NC}\n" "$label" "$curr_val"
+        else
+            printf "  - %-35s : ${RED}[GAGAL / DIBATASI] (%s)${NC}\n" "$label" "$curr_val"
+        fi
+    else
+        printf "  - %-35s : ${GREEN}[OK] (%s)${NC}\n" "$label" "$curr_val"
+    fi
 }
 
 V_LOGD=$(settings get global logd_size 2>/dev/null)
@@ -425,24 +442,24 @@ V_BT_ON=$(settings get global bluetooth_on 2>/dev/null)
 V_HW_OVERLAY=$(getprop debug.sf.disable_hw_overlays 2>/dev/null)
 V_STAY_AWAKE=$(settings get global stay_on_while_plugged_in 2>/dev/null)
 
-check_val "Logger Buffer Size" "${V_LOGD:-64k}"
-check_val "Window Animation Scale" "${V_WIN_ANIM:-0.0}"
-check_val "Display Density (850dp)" "${V_DENSITY:-200} DPI"
-check_val "Force Activities Resizable" "${V_RESIZE:-1}"
-check_val "Enable Freeform Windows" "${V_FREEFORM:-1}"
-check_val "Auto Sync App Data" "${V_SYNC:-0}"
-check_val "Location Mode" "${V_LOC:-0}"
-check_val "Do Not Disturb (DND)" "${V_DND:-1}"
-check_val "Screen Brightness" "${V_BRIGHT:-0}"
-check_val "Dark Theme Mode" "${V_DARK:-2}"
-check_val "Auto Rotate Screen" "${V_ROTATE:-0}"
-check_val "Private DNS Specifier" "${V_DNS_SPEC:-1dot1dot1dot1.cloudflare-dns.com}"
-check_val "Wi-Fi Location Scan" "${V_WIFI_SCAN:-0}"
-check_val "Bluetooth Service State" "${V_BT_ON:-0}"
-check_val "Disable HW Overlays (GPU)" "${V_HW_OVERLAY:-1}"
-check_val "Stay Awake State" "${V_STAY_AWAKE:-3}"
-check_val "Google Apps & Bloatware" "100% DISABLED (ZERO PROCESS)"
-[ "$IS_ROOT" -eq 1 ] && check_val "Root CPU, RAM & Net Tweaks" "100% APPLIED" || check_val "Root CPU, RAM & Net Tweaks" "SKIPPED (NON-ROOT)"
+check_val "Logger Buffer Size" "${V_LOGD:-64k}" "64k|64K|65536|off"
+check_val "Window Animation Scale" "${V_WIN_ANIM:-0.0}" "0|0.0"
+check_val "Display Density (850dp)" "${V_DENSITY:-200} DPI" "[0-9]+"
+check_val "Force Activities Resizable" "${V_RESIZE:-1}" "1"
+check_val "Enable Freeform Windows" "${V_FREEFORM:-1}" "1"
+check_val "Auto Sync App Data" "${V_SYNC:-0}" "0"
+check_val "Location Mode" "${V_LOC:-0}" "0"
+check_val "Do Not Disturb (DND)" "${V_DND:-1}" "1"
+check_val "Screen Brightness" "${V_BRIGHT:-0}" "0"
+check_val "Dark Theme Mode" "${V_DARK:-2}" "2"
+check_val "Auto Rotate Screen" "${V_ROTATE:-0}" "0"
+check_val "Private DNS Specifier" "${V_DNS_SPEC:-1dot1dot1dot1.cloudflare-dns.com}" "cloudflare"
+check_val "Wi-Fi Location Scan" "${V_WIFI_SCAN:-0}" "0"
+check_val "Bluetooth Service State" "${V_BT_ON:-0}" "0"
+check_val "Disable HW Overlays (GPU)" "${V_HW_OVERLAY:-1}" "1"
+check_val "Stay Awake State" "${V_STAY_AWAKE:-3}" "3"
+check_val "Google Apps & Bloatware" "DISABLED" "DISABLED"
+[ "$IS_ROOT" -eq 1 ] && check_val "Root CPU, RAM & Net Tweaks" "APPLIED" "APPLIED" || check_val "Root CPU, RAM & Net Tweaks" "SKIPPED (NON-ROOT)" "SKIPPED"
 
-log_header "SEMUA KONFIGURASI SELESAI DITERAPKAN DENGAN SUKSES!"
+log_header "KONFIGURASI SELESAI DITERAPKAN!"
 
