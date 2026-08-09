@@ -48,8 +48,15 @@ log_header "1. MEMPROSES OPSI PENGEMBANG"
 log_status "Setting Logger Buffer Size -> 64k"
 logcat -G 64K >/dev/null 2>&1
 setprop persist.logd.size 64K >/dev/null 2>&1
+setprop persist.logd.size.main 64K >/dev/null 2>&1
+setprop persist.logd.size.system 64K >/dev/null 2>&1
+setprop persist.logd.size.radio 64K >/dev/null 2>&1
+setprop persist.logd.size.events 64K >/dev/null 2>&1
+setprop persist.logd.size.crash 64K >/dev/null 2>&1
 setprop logd.size 64K >/dev/null 2>&1
 settings put global logd_size 64k >/dev/null 2>&1
+settings put global logd_size 65536 >/dev/null 2>&1
+am force-stop com.android.settings >/dev/null 2>&1
 log_success "Logger Buffer Size = 64k"
 
 # Animasi OFF
@@ -149,15 +156,56 @@ settings put global zen_mode 1 >/dev/null 2>&1
 cmd notification set_dnd on >/dev/null 2>&1
 
 settings put system touch_sounds 0 >/dev/null 2>&1
+settings put global touch_sounds 0 >/dev/null 2>&1
+settings put secure touch_sounds 0 >/dev/null 2>&1
 settings put system sound_effects_enabled 0 >/dev/null 2>&1
+settings put global sound_effects_enabled 0 >/dev/null 2>&1
+settings put secure sound_effects_enabled 0 >/dev/null 2>&1
+
 settings put system lockscreen_sounds_enabled 0 >/dev/null 2>&1
+settings put global lockscreen_sounds_enabled 0 >/dev/null 2>&1
+settings put secure lockscreen_sounds_enabled 0 >/dev/null 2>&1
+settings put system lock_sound 0 >/dev/null 2>&1
+settings put system unlock_sound 0 >/dev/null 2>&1
+
 settings put system charging_sounds_enabled 0 >/dev/null 2>&1
-settings put system dtmf_tone_when_dialing 0 >/dev/null 2>&1
-settings put system haptic_feedback_enabled 0 >/dev/null 2>&1
-settings put system sip_key_feedback_sound 0 >/dev/null 2>&1
-settings put system dial_pad_touch_tone 0 >/dev/null 2>&1
 settings put global charging_sounds_enabled 0 >/dev/null 2>&1
-log_success "DND = ON & Additional Sounds = OFF"
+settings put secure charging_sounds_enabled 0 >/dev/null 2>&1
+settings put system charging_vibration_enabled 0 >/dev/null 2>&1
+settings put global charging_vibration_enabled 0 >/dev/null 2>&1
+settings put secure charging_vibration_enabled 0 >/dev/null 2>&1
+settings put system power_sounds_enabled 0 >/dev/null 2>&1
+settings put global power_sounds_enabled 0 >/dev/null 2>&1
+settings put secure power_sounds_enabled 0 >/dev/null 2>&1
+settings put system charging_sounds 0 >/dev/null 2>&1
+
+settings put system dtmf_tone_when_dialing 0 >/dev/null 2>&1
+settings put global dtmf_tone_when_dialing 0 >/dev/null 2>&1
+settings put secure dtmf_tone_when_dialing 0 >/dev/null 2>&1
+settings put system dial_pad_touch_tone 0 >/dev/null 2>&1
+settings put global dial_pad_touch_tone 0 >/dev/null 2>&1
+settings put secure dial_pad_touch_tone 0 >/dev/null 2>&1
+settings put system dtmf_tone_type 0 >/dev/null 2>&1
+
+settings put system haptic_feedback_enabled 0 >/dev/null 2>&1
+settings put global haptic_feedback_enabled 0 >/dev/null 2>&1
+settings put secure haptic_feedback_enabled 0 >/dev/null 2>&1
+settings put system haptic_feedback_intensity 0 >/dev/null 2>&1
+settings put system vibration_on 0 >/dev/null 2>&1
+settings put system sync_vibrate_with_ringtone 0 >/dev/null 2>&1
+
+settings put system boot_sounds_enabled 0 >/dev/null 2>&1
+settings put global boot_sounds_enabled 0 >/dev/null 2>&1
+settings put system volume_sounds_enabled 0 >/dev/null 2>&1
+settings put global volume_sounds_enabled 0 >/dev/null 2>&1
+settings put system screenshot_sounds_enabled 0 >/dev/null 2>&1
+settings put global screenshot_sounds_enabled 0 >/dev/null 2>&1
+settings put system sip_key_feedback_sound 0 >/dev/null 2>&1
+settings put system keypress_sounds_enabled 0 >/dev/null 2>&1
+settings put system keypress_vibration_enabled 0 >/dev/null 2>&1
+
+am force-stop com.android.settings >/dev/null 2>&1
+log_success "DND = ON & Additional Sounds = ALL OFF"
 
 
 # ------------------------------------------------------------------------------
@@ -244,23 +292,37 @@ log_success "Cache Cleaned & RAM Tuning Selesai"
 
 
 # ------------------------------------------------------------------------------
-# 8. DISABLE GOOGLE & BLOATWARE
+# 8. DISABLE GOOGLE & SYSTEM BLOATWARE (PROTECT WEBVIEW & DEPENDENCIES)
 # ------------------------------------------------------------------------------
-log_header "8. MEMPROSES DISABLE GOOGLE & BLOATWARE"
+log_header "8. MEMPROSES AUTO-SCANNER BLOATWARE SISTEM"
 
-log_status "Mematikan SELURUH Aplikasi Google & Bloatware..."
-ALL_GOOGLE_PKGS=$(pm list packages 2>/dev/null | grep -i 'google' | cut -d':' -f2)
-OTHER_BLOATWARES="com.android.vending com.android.bips com.android.printspooler com.android.wallpaper.livepicker com.android.feedback com.android.musicfx com.android.cellbroadcastreceiver"
+log_status "Memastikan WebView & Dependency Aplikasi Tetap AKTIF..."
+pm enable com.google.android.webview >/dev/null 2>&1
+pm enable com.android.webview >/dev/null 2>&1
+pm enable com.android.chrome >/dev/null 2>&1
+pm enable com.android.htmlviewer >/dev/null 2>&1
 
-ALL_TO_DISABLE="$ALL_GOOGLE_PKGS $OTHER_BLOATWARES"
+log_status "Memindai & mematikan GMS, Play Store, & Bloatware murni..."
 
-for pkg in $ALL_TO_DISABLE; do
+SYS_PACKAGES=$(pm list packages -s 2>/dev/null | cut -d':' -f2)
+BLOAT_PATTERNS="youtube|vending|play|gms|gsf|drive|duo|gmail|maps|photos|camera|gallery|music|video|calendar|deskclock|clock|email|contacts|dialer|messaging|mms|stk|fmradio|bips|printspooler|wallpaper|feedback|musicfx|cellbroadcast|talkback|companion|bookmark|calculator|soundrecorder|search|assistant"
+
+for pkg in $SYS_PACKAGES; do
     [ -z "$pkg" ] && continue
-    am force-stop "$pkg" >/dev/null 2>&1
-    pm disable-user --user 0 "$pkg" >/dev/null 2>&1
-    pm disable "$pkg" >/dev/null 2>&1
+    # Proteksi total untuk System Core & Dependency Aplikasi (WebView, Chrome, Installer, Permission)
+    case "$pkg" in
+        android|com.android.systemui|com.android.settings|com.termux|*launcher*|*inputmethod*|*keyboard*|*webview*|*chrome*|*htmlviewer*|*installer*|*permission*)
+            continue
+            ;;
+    esac
+    
+    if echo "$pkg" | grep -iE "$BLOAT_PATTERNS" >/dev/null 2>&1; then
+        am force-stop "$pkg" >/dev/null 2>&1
+        pm disable-user --user 0 "$pkg" >/dev/null 2>&1
+        pm disable "$pkg" >/dev/null 2>&1
+    fi
 done
-log_success "Aplikasi & Service Google = DISABLED (100%)"
+log_success "Bloatware & GMS = DISABLED (WebView & Dependencies SAFE)"
 
 
 # ------------------------------------------------------------------------------
