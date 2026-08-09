@@ -44,17 +44,19 @@ echo ""
 # ------------------------------------------------------------------------------
 log_header "1. MEMPROSES OPSI PENGEMBANG"
 
-# Logger Buffer OFF / 64k
-log_status "Setting Logger Buffer Size -> OFF / 64k"
-logcat -G off >/dev/null 2>&1
+# Logger Buffer 64k / OFF
+log_status "Setting Logger Buffer Size -> 64k / OFF"
 logcat -G 64K >/dev/null 2>&1
 logcat -G 64k >/dev/null 2>&1
+logcat -G off >/dev/null 2>&1
 
-setprop persist.logd.size off >/dev/null 2>&1
 setprop persist.logd.size 64K >/dev/null 2>&1
 setprop persist.logd.size 64k >/dev/null 2>&1
-setprop logd.size off >/dev/null 2>&1
+setprop persist.logd.size 65536 >/dev/null 2>&1
+
 setprop logd.size 64K >/dev/null 2>&1
+setprop logd.size 64k >/dev/null 2>&1
+setprop logd.size 65536 >/dev/null 2>&1
 
 setprop persist.logd.size.main 64K >/dev/null 2>&1
 setprop persist.logd.size.system 64K >/dev/null 2>&1
@@ -62,11 +64,10 @@ setprop persist.logd.size.radio 64K >/dev/null 2>&1
 setprop persist.logd.size.events 64K >/dev/null 2>&1
 setprop persist.logd.size.crash 64K >/dev/null 2>&1
 
-resetprop persist.logd.size off >/dev/null 2>&1
 resetprop persist.logd.size 64K >/dev/null 2>&1
 resetprop persist.logd.size 64k >/dev/null 2>&1
+resetprop persist.logd.size 65536 >/dev/null 2>&1
 
-settings put global logd_size off >/dev/null 2>&1
 settings put global logd_size 64k >/dev/null 2>&1
 settings put global logd_size 64K >/dev/null 2>&1
 settings put global logd_size 65536 >/dev/null 2>&1
@@ -77,7 +78,7 @@ settings put system logd_size 64k >/dev/null 2>&1
 setprop ctl.restart logd >/dev/null 2>&1
 killall -9 logd >/dev/null 2>&1
 am force-stop com.android.settings >/dev/null 2>&1
-log_success "Logger Buffer Size = OFF / 64k"
+log_success "Logger Buffer Size = 64k / OFF"
 
 # Animasi OFF
 log_status "Setting Animation Scales -> OFF"
@@ -317,9 +318,18 @@ log_status "Memastikan WebView Tetap AKTIF..."
 pm enable com.google.android.webview >/dev/null 2>&1
 pm enable com.android.webview >/dev/null 2>&1
 
+# Mematikan Google Chrome secara khusus
+log_status "Mematikan Google Chrome (com.android.chrome)..."
+CHROME_PKGS="com.android.chrome com.google.android.apps.chrome com.chrome.beta com.chrome.dev"
+for cpkg in $CHROME_PKGS; do
+    am force-stop "$cpkg" >/dev/null 2>&1
+    pm disable-user --user 0 "$cpkg" >/dev/null 2>&1
+    pm disable "$cpkg" >/dev/null 2>&1
+done
+
 log_status "Mematikan SELURUH paket Google (100% tanpa terkecuali, kecuali WebView)..."
 
-ALL_GOOGLE=$(pm list packages 2>/dev/null | grep -i 'google' | cut -d':' -f2)
+ALL_GOOGLE=$(pm list packages 2>/dev/null | grep -iE 'google|chrome' | cut -d':' -f2)
 
 for gpkg in $ALL_GOOGLE; do
     [ -z "$gpkg" ] && continue
@@ -335,7 +345,7 @@ done
 
 log_status "Mematikan Bloatware Sistem Lainnya (Kamera, Galeri, Jam, Email, dll)..."
 SYS_PACKAGES=$(pm list packages -s 2>/dev/null | cut -d':' -f2)
-BLOAT_PATTERNS="vending|bips|printspooler|wallpaper|feedback|musicfx|cellbroadcast|talkback|companion|bookmark|camera|gallery|music|video|calendar|deskclock|clock|email|contacts|dialer|messaging|mms|stk|fmradio|calculator|soundrecorder"
+BLOAT_PATTERNS="vending|bips|printspooler|wallpaper|feedback|musicfx|cellbroadcast|talkback|companion|bookmark|camera|gallery|music|video|calendar|deskclock|clock|email|contacts|dialer|messaging|mms|stk|fmradio|calculator|soundrecorder|chrome"
 
 for pkg in $SYS_PACKAGES; do
     [ -z "$pkg" ] && continue
@@ -351,7 +361,7 @@ for pkg in $SYS_PACKAGES; do
         pm disable "$pkg" >/dev/null 2>&1
     fi
 done
-log_success "SELURUH Aplikasi Google = DISABLED (100%, Kecuali WebView)"
+log_success "SELURUH Aplikasi Google & Chrome = DISABLED (100%, Kecuali WebView)"
 
 
 # ------------------------------------------------------------------------------
