@@ -44,15 +44,17 @@ echo ""
 # ------------------------------------------------------------------------------
 log_header "1. MEMPROSES OPSI PENGEMBANG"
 
-# Logger Buffer 64k
-log_status "Setting Logger Buffer Size -> 64k"
+# Logger Buffer OFF / 64k
+log_status "Setting Logger Buffer Size -> OFF / 64k"
+logcat -G off >/dev/null 2>&1
 logcat -G 64K >/dev/null 2>&1
 logcat -G 64k >/dev/null 2>&1
 
+setprop persist.logd.size off >/dev/null 2>&1
 setprop persist.logd.size 64K >/dev/null 2>&1
 setprop persist.logd.size 64k >/dev/null 2>&1
+setprop logd.size off >/dev/null 2>&1
 setprop logd.size 64K >/dev/null 2>&1
-setprop logd.size 64k >/dev/null 2>&1
 
 setprop persist.logd.size.main 64K >/dev/null 2>&1
 setprop persist.logd.size.system 64K >/dev/null 2>&1
@@ -60,20 +62,22 @@ setprop persist.logd.size.radio 64K >/dev/null 2>&1
 setprop persist.logd.size.events 64K >/dev/null 2>&1
 setprop persist.logd.size.crash 64K >/dev/null 2>&1
 
+resetprop persist.logd.size off >/dev/null 2>&1
 resetprop persist.logd.size 64K >/dev/null 2>&1
 resetprop persist.logd.size 64k >/dev/null 2>&1
-resetprop logd.size 64K >/dev/null 2>&1
 
+settings put global logd_size off >/dev/null 2>&1
 settings put global logd_size 64k >/dev/null 2>&1
 settings put global logd_size 64K >/dev/null 2>&1
 settings put global logd_size 65536 >/dev/null 2>&1
+settings put global logcat_buffer_size 64k >/dev/null 2>&1
 settings put secure logd_size 64k >/dev/null 2>&1
 settings put system logd_size 64k >/dev/null 2>&1
 
 setprop ctl.restart logd >/dev/null 2>&1
 killall -9 logd >/dev/null 2>&1
 am force-stop com.android.settings >/dev/null 2>&1
-log_success "Logger Buffer Size = 64k"
+log_success "Logger Buffer Size = OFF / 64k"
 
 # Animasi OFF
 log_status "Setting Animation Scales -> OFF"
@@ -305,26 +309,38 @@ log_success "Cache Cleaned & RAM Tuning Selesai"
 
 
 # ------------------------------------------------------------------------------
-# 8. DISABLE GOOGLE & SYSTEM BLOATWARE (PROTECT WEBVIEW & DEPENDENCIES)
+# 8. DISABLE SELURUH GOOGLE (KECUALI WEBVIEW) & BLOATWARE SISTEM
 # ------------------------------------------------------------------------------
-log_header "8. MEMPROSES AUTO-SCANNER BLOATWARE SISTEM"
+log_header "8. MEMPROSES DISABLE TOTAL GOOGLE (KECUALI WEBVIEW)"
 
-log_status "Memastikan WebView & Dependency Aplikasi Tetap AKTIF..."
+log_status "Memastikan WebView Tetap AKTIF..."
 pm enable com.google.android.webview >/dev/null 2>&1
 pm enable com.android.webview >/dev/null 2>&1
-pm enable com.android.chrome >/dev/null 2>&1
-pm enable com.android.htmlviewer >/dev/null 2>&1
 
-log_status "Memindai & mematikan GMS, Play Store, & Bloatware murni..."
+log_status "Mematikan SELURUH paket Google (100% tanpa terkecuali, kecuali WebView)..."
 
+ALL_GOOGLE=$(pm list packages 2>/dev/null | grep -i 'google' | cut -d':' -f2)
+
+for gpkg in $ALL_GOOGLE; do
+    [ -z "$gpkg" ] && continue
+    case "$gpkg" in
+        *webview*)
+            continue
+            ;;
+    esac
+    am force-stop "$gpkg" >/dev/null 2>&1
+    pm disable-user --user 0 "$gpkg" >/dev/null 2>&1
+    pm disable "$gpkg" >/dev/null 2>&1
+done
+
+log_status "Mematikan Bloatware Sistem Lainnya (Kamera, Galeri, Jam, Email, dll)..."
 SYS_PACKAGES=$(pm list packages -s 2>/dev/null | cut -d':' -f2)
-BLOAT_PATTERNS="youtube|vending|play|gms|gsf|drive|duo|gmail|maps|photos|camera|gallery|music|video|calendar|deskclock|clock|email|contacts|dialer|messaging|mms|stk|fmradio|bips|printspooler|wallpaper|feedback|musicfx|cellbroadcast|talkback|companion|bookmark|calculator|soundrecorder|search|assistant"
+BLOAT_PATTERNS="vending|bips|printspooler|wallpaper|feedback|musicfx|cellbroadcast|talkback|companion|bookmark|camera|gallery|music|video|calendar|deskclock|clock|email|contacts|dialer|messaging|mms|stk|fmradio|calculator|soundrecorder"
 
 for pkg in $SYS_PACKAGES; do
     [ -z "$pkg" ] && continue
-    # Proteksi total untuk System Core & Dependency Aplikasi (WebView, Chrome, Installer, Permission)
     case "$pkg" in
-        android|com.android.systemui|com.android.settings|com.termux|*launcher*|*inputmethod*|*keyboard*|*webview*|*chrome*|*htmlviewer*|*installer*|*permission*)
+        android|com.android.systemui|com.android.settings|com.termux|*launcher*|*webview*|*installer*|*permission*)
             continue
             ;;
     esac
@@ -335,7 +351,7 @@ for pkg in $SYS_PACKAGES; do
         pm disable "$pkg" >/dev/null 2>&1
     fi
 done
-log_success "Bloatware & GMS = DISABLED (WebView & Dependencies SAFE)"
+log_success "SELURUH Aplikasi Google = DISABLED (100%, Kecuali WebView)"
 
 
 # ------------------------------------------------------------------------------
